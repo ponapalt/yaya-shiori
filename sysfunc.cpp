@@ -83,7 +83,7 @@ extern "C" {
 #endif
 #endif
 
-#define	SYSFUNC_NUM					134 //システム関数の全数
+#define	SYSFUNC_NUM					140 //システム関数の全数
 #define	SYSFUNC_HIS					61 //EmBeD_HiStOrY の位置（0start）
 
 static const wchar_t sysfunc[SYSFUNC_NUM][32] = {
@@ -251,6 +251,13 @@ static const wchar_t sysfunc[SYSFUNC_NUM][32] = {
 	L"SETSETTING",
 	// デバッグ用(3)
 	L"DUMPVAR",
+    // ハッシュ
+    L"IHASH",
+	L"HASH_KEYS",
+	L"HASH_VALUES",
+	L"HASH_SPLIT",
+	L"HASH_EXIST",
+	L"HASH_SIZE",
 	// ファイル操作(5)
 	L"FSEEK",
 	L"FTELL",
@@ -643,31 +650,43 @@ CValue	CSystemFunction::Execute(int index, const CValue &arg, const std::vector<
 		return SETSETTING(arg, d, l);
 	case 120:
 		return DUMPVAR(arg, d, l);
-	case 121:
-		return FSEEK(arg, d, l);
+    case 121:
+ 		return IHASH(arg, d, l);
 	case 122:
-		return FTELL(arg, d, l);
+		return HASH_KEYS(valuearg, d, l);
 	case 123:
-		return LICENSE();
+		return HASH_VALUES(valuearg, d, l);
 	case 124:
-		return STRENCODE(arg, d, l);
+ 		return HASH_SPLIT(arg, d, l);
 	case 125:
-		return STRDECODE(arg, d, l);
+		return HASH_EXIST(valuearg, d, l);
 	case 126:
-		return EXECUTE_WAIT(arg, d, l);
+		return HASH_SIZE(valuearg, d, l);
 	case 127:
-		return RE_OPTION(arg, d, l);
+		return FSEEK(arg, d, l);
 	case 128:
-		return FREADENCODE(arg, d, l);
+		return FTELL(arg, d, l);
 	case 129:
-		return GETTYPEEX(arg, lvar, d, l);
+		return LICENSE();
 	case 130:
-		return RE_ASEARCHEX(arg, d, l);
+		return STRENCODE(arg, d, l);
 	case 131:
-		return RE_ASEARCH(arg, d, l);
+		return STRDECODE(arg, d, l);
 	case 132:
-		return ASORT(arg, d, l);
+		return EXECUTE_WAIT(arg, d, l);
 	case 133:
+		return RE_OPTION(arg, d, l);
+	case 134:
+		return FREADENCODE(arg, d, l);
+	case 135:
+		return GETTYPEEX(arg, lvar, d, l);
+	case 136:
+		return RE_ASEARCHEX(arg, d, l);
+	case 137:
+		return RE_ASEARCH(arg, d, l);
+	case 138:
+		return ASORT(arg, d, l);
+	case 139:
 		return TRANSLATE(arg, d, l);
 	default:
 		vm.logger().Error(E_E, 49, d, l);
@@ -799,6 +818,8 @@ CValue	CSystemFunction::GETTYPE(CValueArgArray &valuearg, yaya::string_t &d, int
 				return CValue(4);
 			}
 		}
+	case F_TAG_HASH:
+		return CValue(5);
 	default:
 		vm.logger().Error(E_E, 88, L"GETTYPE", d, l);
 		return CValue(0);
@@ -855,6 +876,8 @@ CValue	CSystemFunction::GETTYPEEX(const CValue &arg, CLocalVariable &lvar, yaya:
 		return CValue(3);
 	case F_TAG_ARRAY:
 		return CValue(4);
+	case F_TAG_HASH:
+		return CValue(5);
 	default:
 		return CValue(0);
 	}
@@ -3315,6 +3338,159 @@ CValue	CSystemFunction::SETDELIM(const std::vector<CCell *> &pcellarg, CLocalVar
 }
 
 /* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::IHASH
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::IHASH(const CValue &arg, yaya::string_t &d, int &l)
+{
+	if ( ! arg.array_size() ) {
+		return CValue(F_TAG_HASH, 0);
+	}
+
+	if ( arg.array_size() % 2 ) {
+		vm.logger().Error(E_W, 20, L"IHASH", d, l);
+	}
+
+	CValue result(F_TAG_HASH,0/*dmy*/);
+	
+	CValueArray::const_iterator itr = arg.array().begin();
+	CValueArray::const_iterator ite = arg.array().end();
+
+	while ( itr != ite ) {
+		++itr;
+		if ( itr != ite ) {
+			result.hash().insert(std::pair<CValueSub,CValueSub>(*(itr-1),*(itr)));
+			++itr;
+		}
+		else {
+			result.hash().insert(std::pair<CValueSub,CValueSub>(*(itr-1),CValueSub()));
+		}
+	}
+
+	return result;
+}
+
+/* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::HASH_KEYS
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::HASH_KEYS(CValueArgArray &valuearg, yaya::string_t &d, int &l)
+{
+	if (valuearg.size() < 1) {
+		vm.logger().Error(E_W, 8, L"HASH_KEYS", d, l);
+		SetError(8);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	if ( valuearg[0].GetType() != F_TAG_HASH ) {
+		vm.logger().Error(E_W, 9, L"HASH_KEYS", d, l);
+		SetError(9);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	const CValueHash &map = valuearg[0].hash();
+
+	if ( map.empty() ) {
+		return CValue(F_TAG_ARRAY,0/*dmy*/);
+	}
+
+	CValue result(F_TAG_ARRAY,0/*dmy*/);
+	
+	CValueHash::const_iterator itr = map.begin();
+	CValueHash::const_iterator ite = map.end();
+
+	for ( ; itr != ite ; ++itr ) {
+		result.array().push_back(itr->first);
+	}
+
+	return result;
+}
+
+/* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::HASH_VALUES
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::HASH_VALUES(CValueArgArray &valuearg, yaya::string_t &d, int &l)
+{
+	if (valuearg.size() < 1) {
+		vm.logger().Error(E_W, 8, L"HASH_VALUES", d, l);
+		SetError(8);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	if ( valuearg[0].GetType() != F_TAG_HASH ) {
+		vm.logger().Error(E_W, 9, L"HASH_VALUES", d, l);
+		SetError(9);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	const CValueHash &map = valuearg[0].hash();
+
+	if ( map.empty() ) {
+		return CValue(F_TAG_ARRAY,0/*dmy*/);
+	}
+
+	CValue result(F_TAG_ARRAY,0/*dmy*/);
+	
+	CValueHash::const_iterator itr = map.begin();
+	CValueHash::const_iterator ite = map.end();
+
+	for ( ; itr != ite ; ++itr ) {
+		result.array().push_back(itr->second);
+	}
+
+	return result;
+}
+
+/* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::HASH_EXIST
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::HASH_EXIST(CValueArgArray &valuearg, yaya::string_t &d, int &l)
+{
+	if (valuearg.size() < 2) {
+		vm.logger().Error(E_W, 8, L"HASH_EXIST", d, l);
+		SetError(8);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	if ( valuearg[0].GetType() == F_TAG_HASH || valuearg[0].GetType() == F_TAG_ARRAY ) {
+		vm.logger().Error(E_W, 9, L"HASH_EXIST", d, l);
+		SetError(9);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	if ( valuearg[1].GetType() != F_TAG_HASH ) {
+		vm.logger().Error(E_W, 9, L"HASH_EXIST", d, l);
+		SetError(9);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	return CValue(valuearg[1].hash().find(CValueSub(valuearg[0])) != valuearg[1].hash().end() ? 1 : 0);
+}
+
+/* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::HASH_SIZE
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::HASH_SIZE(CValueArgArray &valuearg, yaya::string_t &d, int &l)
+{
+	if (valuearg.size() < 1) {
+		vm.logger().Error(E_W, 8, L"HASH_SIZE", d, l);
+		SetError(8);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	if ( valuearg[0].GetType() != F_TAG_HASH ) {
+		vm.logger().Error(E_W, 9, L"HASH_SIZE", d, l);
+		SetError(9);
+		return CValue(F_TAG_NOP, 0/*dmy*/);
+	}
+
+	return CValue((int)valuearg[0].hash().size());
+}
+
+/* -----------------------------------------------------------------------
  *  関数名  ：  CSystemFunction::EVAL
  * -----------------------------------------------------------------------
  */
@@ -5546,6 +5722,85 @@ CValue	CSystemFunction::SPLIT(const CValue &arg, yaya::string_t &d, int &l)
 		}
 		result.array().push_back(CValueSub(tgt_str.substr(seppoint, spoint-seppoint)));
 		seppoint = spoint + sep_strlen;
+	}
+
+	return result;
+}
+
+/* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::HASH_SPLIT
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::HASH_SPLIT(const CValue &arg, yaya::string_t &d, int &l)
+{
+	int	sz = arg.array_size();
+	if (sz < 3) {
+		vm.logger().Error(E_W, 8, L"HASH_SPLIT", d, l);
+		SetError(8);
+		return CValue(F_TAG_HASH, 0/*dmy*/);
+	}
+
+	if (!arg.array()[0].IsString() ||
+		!arg.array()[1].IsString() ||
+		!arg.array()[2].IsString()) {
+		vm.logger().Error(E_W, 9, L"HASH_SPLIT", d, l);
+		SetError(9);
+	}
+
+	CValue	result(F_TAG_HASH, 0/*dmy*/);
+
+	const yaya::string_t &tgt_str  = arg.array()[0].GetValueString();
+	const yaya::string_t &sep_str1 = arg.array()[1].GetValueString();
+	const yaya::string_t &sep_str2 = arg.array()[2].GetValueString();
+
+	if (sep_str1.length() == 0 || sep_str2.length() == 0) {
+		vm.logger().Error(E_W, 10, L"HASH_SPLIT", d, l);
+		SetError(10);
+		return CValue(F_TAG_HASH, 0/*dmy*/);
+	}
+	
+	const yaya::string_t::size_type sep_str1len = sep_str1.size();
+	const yaya::string_t::size_type sep_str2len = sep_str2.size();
+	const yaya::string_t::size_type tgt_strlen  = tgt_str.size();
+	yaya::string_t::size_type seppoint = 0;
+	yaya::string_t::size_type spoint,spoint2;
+	yaya::string_t element;
+
+	while(true) {
+		if ( tgt_strlen-seppoint == 0 ) {
+			break;
+		}
+
+		spoint = tgt_str.find(sep_str1,seppoint);
+		if ( spoint == seppoint ) {
+			seppoint += sep_str1len;
+			continue;
+		}
+
+		if (spoint == yaya::string_t::npos) {
+			element = tgt_str.substr(seppoint,tgt_strlen - seppoint);
+		}
+		else {
+			element = tgt_str.substr(seppoint, spoint-seppoint);
+		}
+		
+		spoint2 = element.find(sep_str2,0);
+
+		if ( spoint2 == yaya::string_t::npos ) {
+			result.hash().insert(std::pair<CValueSub,CValueSub>(element,CValueSub()));
+		}
+		else {
+			if ( spoint2 != 0 ) {
+				result.hash().insert(std::pair<CValueSub,CValueSub>(CValueSub(element.substr(0,spoint2))
+					,CValueSub(element.substr(spoint2+sep_str2len,element.size()-spoint2-sep_str2len))));
+			}
+		}
+
+		if (spoint == yaya::string_t::npos) {
+			break;
+		}
+
+		seppoint = spoint + sep_str1len;
 	}
 
 	return result;

@@ -133,6 +133,7 @@ protected:
 	void	LoadBaseConfigureFile(std::vector<CDic1> &dics);
 
 	void	RestoreArrayVariable(CValue &var, yaya::string_t &value);
+	void	RestoreHashVariable(CValue &var, yaya::string_t &value);
 };
 
 //----

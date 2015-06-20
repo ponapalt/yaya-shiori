@@ -28,6 +28,7 @@ class CValue;
 class CValueSub;
 
 typedef std::vector<CValueSub> CValueArray;
+typedef std::map<CValueSub, CValueSub> CValueHash;
 
 class	CValueSub
 {
@@ -122,6 +123,7 @@ public:
 
 private:
 	mutable boost::shared_ptr<CValueArray> m_array;		// 汎用配列
+    mutable boost::shared_ptr<CValueHash> m_hash;  // ハッシュ
 
 private:
 	int CalcEscalationTypeNum(const int rhs) const;
@@ -142,6 +144,9 @@ public:
 		if ( type == F_TAG_ARRAY ) {
 			m_array = rhs.m_array;
 		}
+        else if (type == F_TAG_HASH) {
+            m_hash = rhs.m_hash;
+        }
 		else if ( type == F_TAG_STRING ) {
 			s_value = rhs.s_value;
 		}
@@ -156,8 +161,12 @@ public:
 		if ( type == F_TAG_ARRAY ) {
 			m_array = rhs.m_array;
 		}
+        else if (type == F_TAG_HASH) {
+            m_hash = rhs.m_hash;
+        }
 		else {
 			m_array.reset((CValueArray*)NULL);
+            m_hash.reset((CValueHash*)NULL);
 			if ( type == F_TAG_STRING ) {
 				s_value = rhs.s_value;
 			}
@@ -213,6 +222,7 @@ public:
 	inline bool		IsDouble(void) const { return type == F_TAG_DOUBLE || type == F_TAG_VOID; }
 	inline bool		IsDoubleReal(void) const { return type == F_TAG_DOUBLE; }
 	inline bool		IsArray(void) const { return type == F_TAG_ARRAY; }
+    inline bool     IsHash(void) const { return type == F_TAG_HASH; }
 
 	inline bool		IsNum(void) const { return type == F_TAG_INT || type == F_TAG_DOUBLE || type == F_TAG_VOID; }
 
@@ -230,6 +240,13 @@ public:
 			else {
 				return 0;
 			}
+        case F_TAG_HASH:
+            if ( m_hash.get() ) {
+                return m_hash->size() != 0;
+            }
+            else {
+                return 0;
+            }
 		default:
 			break;
 		};
@@ -250,6 +267,7 @@ public:
 	CValue	&operator =(const yaya::string_t &value);
 	CValue	&operator =(const yaya::char_t *value);
 	CValue	&operator =(const CValueArray &value);
+    CValue  &operator =(const CValueHash &value);
 	CValue	&operator =(const CValueSub &value);
 
 	CValue	operator +(const CValue &value) const;
@@ -313,6 +331,35 @@ public:
 			m_array.reset(new CValueArray(*pV));
 		}
 		return *m_array;
+	}
+
+	//////////////////////////////////////////////
+	CValueHash::size_type hash_size(void) const {
+		if ( ! m_hash.get() ) {
+			return 0;
+		}
+		else {
+			return m_hash->size();
+		}
+	}
+	boost::shared_ptr<CValueHash> &hash_shared(void) const {
+		return m_hash;
+	}
+	const CValueHash& hash(void) const {
+		if ( ! m_hash.get() ) {
+			m_hash.reset(new CValueHash);
+		}
+		return *m_hash;
+	}
+	CValueHash& hash(void) {
+		if ( ! m_hash.get() ) {
+			m_hash.reset(new CValueHash);
+		}
+		else if ( m_hash.use_count() >= 2 ) {
+			CValueHash *pV = m_hash.get();
+			m_hash.reset(new CValueHash(*pV));
+		}
+		return *m_hash;
 	}
 };
 
