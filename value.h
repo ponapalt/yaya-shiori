@@ -19,10 +19,14 @@
 #endif
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+//modified by Neo 2015.oct
+#include <climits>
+//modified by Neo 2015.oct
 
 #include "manifest.h"
 #include "globaldef.h"
+#include "fix_old_compiler.h"
 
 class CValue;
 class CValueSub;
@@ -94,6 +98,12 @@ public:
 	CValueSub	operator /(const CValueSub &value) const;
 	CValueSub	operator %(const CValueSub &value) const;
 
+	void	operator +=(const CValueSub &value);
+	void	operator -=(const CValueSub &value);
+	void	operator *=(const CValueSub &value);
+	void	operator /=(const CValueSub &value);
+	void	operator %=(const CValueSub &value);
+
 	inline CValueSub operator ==(const CValueSub &value) const {
 		return CValueSub(Compare(value));
 	}
@@ -122,8 +132,8 @@ public:
 	int		i_value;				// 整数値
 
 private:
-	mutable boost::shared_ptr<CValueArray> m_array;		// 汎用配列
-    mutable boost::shared_ptr<CValueHash> m_hash;  // ハッシュ
+	mutable std_shared_ptr<CValueArray> m_array;		// 汎用配列
+    mutable std_shared_ptr<CValueHash> m_hash;  // ハッシュ
 
 private:
 	int CalcEscalationTypeNum(const int rhs) const;
@@ -270,11 +280,19 @@ public:
     CValue  &operator =(const CValueHash &value);
 	CValue	&operator =(const CValueSub &value);
 
+	void SubstToArray(CValueArray &value);
+
 	CValue	operator +(const CValue &value) const;
 	CValue	operator -(const CValue &value) const;
 	CValue	operator *(const CValue &value) const;
 	CValue	operator /(const CValue &value) const;
 	CValue	operator %(const CValue &value) const;
+
+	void	operator +=(const CValue &value);
+	void	operator -=(const CValue &value);
+	void	operator *=(const CValue &value);
+	void	operator /=(const CValue &value);
+	void	operator %=(const CValue &value);
 
 	CValue	operator [](const CValue &value) const;
 
@@ -313,7 +331,7 @@ public:
 			return m_array->size();
 		}
 	}
-	boost::shared_ptr<CValueArray> &array_shared(void) const {
+	std_shared_ptr<CValueArray> &array_shared(void) const {
 		return m_array;
 	}
 	const CValueArray& array(void) const {
@@ -360,6 +378,9 @@ public:
 			m_hash.reset(new CValueHash(*pV));
 		}
 		return *m_hash;
+	}
+	inline void array_clear(void) {
+		m_array.reset((CValueArray*)NULL);
 	}
 };
 

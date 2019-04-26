@@ -5,7 +5,9 @@
 #include <string>
 #include <map>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
+#include "fix_old_compiler.h"
 
 //32/64bit
 #define JGX_WIN64_AWARE 
@@ -44,8 +46,8 @@ namespace yaya {
 	typedef wchar_t char_t;
 	typedef std::basic_string<char_t> string_t;
 
-	typedef boost::shared_ptr<string_t> share_string_t;
-	typedef boost::shared_ptr<const string_t> const_share_string_t;
+	typedef std_shared_ptr<string_t> share_string_t;
+	typedef std_shared_ptr<const string_t> const_share_string_t;
 
 	typedef std::map<yaya::string_t,int> indexmap;
 

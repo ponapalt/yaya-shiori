@@ -15,11 +15,19 @@
 #include <exception>
 #if defined(POSIX)
 # include <fstream>
+#define stricmp strcasecmp
+#define strnicmp strncasecmp
+#define wcsnicmp wcsncasecmp
 #endif
 #include <string>
 #include <vector>
 #include <map>
 #include <ctime>
+
+#include <cstring>
+#include <stdexcept>
+
+#include "fix_unistd.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -30,7 +38,7 @@
 #endif
 
 #if defined(POSIX)
-# include <boost/scoped_array.hpp>
+# include <memory>
 #endif
 
 #include "sysfunc.h"
@@ -2547,13 +2555,13 @@ CValue CSystemFunction::FCOPY(const CValue &arg, yaya::string_t &d, int &l) {
     }
 
     // 実行
-    unlink(dest.c_str()); // コピー先がシンボリックリンクとかだと嫌。
+    std::remove(dest.c_str()); // コピー先がシンボリックリンクとかだと嫌。
 	std::ifstream is(src.c_str());
     int result = 0;
     if (is.good()) {
 		std::ofstream os(dest.c_str());
 	if (os.good()) {
-		boost::scoped_array<char> buf(new char[512]);
+        std::unique_ptr<char[]> buf(new char[512]);
 	    while (is.good()) {
 		is.read(buf.get(), 512);
 		int len = is.gcount();
@@ -2759,7 +2767,7 @@ CValue CSystemFunction::RMDIR(const CValue &arg, yaya::string_t &d, int &l) {
     fix_filepath(dirstr);
 
     // 実行。
-    int result = (rmdir(dirstr.c_str()) ? 0 : 1);
+    int result = (std::remove(dirstr.c_str()) ? 0 : 1);
 
     return CValue(result);
 }
@@ -2816,7 +2824,7 @@ CValue CSystemFunction::FDEL(const CValue &arg, yaya::string_t &d, int &l) {
     fix_filepath(filestr);
 
     // 実行
-    int result = (unlink(filestr.c_str()) ? 0 : 1);
+    int result = (std::remove(filestr.c_str()) ? 0 : 1);
 
     return CValue(result);
 }
@@ -2995,11 +3003,7 @@ CValue	CSystemFunction::FDIGEST(const CValue &arg, yaya::string_t &d, int &l)
 	md5str[digest_len*2] = 0; //ゼロ終端
 
 	for ( unsigned int i = 0 ; i < digest_len ; ++i ) {
-#if (_MSC_VER > 1200) || defined(POSIX)
-		swprintf(md5str+i*2,sizeof(md5str)/sizeof(md5str[0]), L"%02X",digest_result[i]);
-#else
-		swprintf(md5str+i*2, L"%02X",digest_result[i]);
-#endif
+		yaya::snprintf(md5str+i*2,sizeof(md5str)/sizeof(md5str[0]), L"%02X",digest_result[i]);
 	}
 
 	return CValue(yaya::string_t(md5str));
@@ -3745,7 +3749,7 @@ static bool Utils_HTTPToTM(const char *pText,struct tm &outTime)
 		outTime.tm_wday = 0;
 	}
 	else {
-		outTime.tm_wday = static_cast<WORD>(i);
+		outTime.tm_wday = static_cast<unsigned short>(i);
 	}
 
 	if ( isdigit(pTokArray[1][0]) ) { //RFC Format
@@ -3943,11 +3947,6 @@ CValue	CSystemFunction::RE_SEARCH(const CValue &arg, yaya::string_t &d, int &l)
 			StoreReResultDetails(arg0,t_result);
 		}
 	}
-	/*catch(const boost::bad_expression &) {
-		t_result = 0;
-		vm.logger().Error(E_W, 16, L"RE_SEARCH", d, l);
-		SetError(16);
-	}*/
 	catch(const std::runtime_error &) {
 		vm.logger().Error(E_W, 16, L"RE_SEARCH", d, l);
 		SetError(16);
@@ -3998,11 +3997,6 @@ CValue	CSystemFunction::RE_ASEARCH(const CValue &arg, yaya::string_t &d, int &l)
 		}
 
 	}
-	/*catch(const boost::bad_expression &) {
-		vm.logger().Error(E_W, 16, L"RE_ASEARCHEX", d, l);
-		SetError(16);
-		return CValue(F_TAG_ARRAY, 0);
-	}*/
 	catch(...) {
 		vm.logger().Error(E_W, 17, L"RE_ASEARCHEX", d, l);
 		SetError(17);
@@ -4046,11 +4040,6 @@ CValue	CSystemFunction::RE_ASEARCHEX(const CValue &arg, yaya::string_t &d, int &
 		}
 
 	}
-	/*catch(const boost::bad_expression &) {
-		vm.logger().Error(E_W, 16, L"RE_ASEARCHEX", d, l);
-		SetError(16);
-		return CValue(F_TAG_ARRAY, 0);
-	}*/
 	catch(...) {
 		vm.logger().Error(E_W, 17, L"RE_ASEARCHEX", d, l);
 		SetError(17);
@@ -4097,10 +4086,6 @@ CValue	CSystemFunction::RE_MATCH(const CValue &arg, yaya::string_t &d, int &l)
 			StoreReResultDetails(arg0,t_result);
 		}
 	}
-	/*catch(const boost::bad_expression &) {
-		vm.logger().Error(E_W, 16, L"RE_MATCH", d, l);
-		SetError(16);
-	}*/
 	catch(const std::runtime_error &) {
 		vm.logger().Error(E_W, 16, L"RE_MATCH", d, l);
 		SetError(16);
@@ -4164,11 +4149,6 @@ CValue	CSystemFunction::RE_GREP(const CValue &arg, yaya::string_t &d, int &l)
 
 		regex.ReleaseContext(pCtx);
 	}
-	/*catch(const boost::bad_expression &) {
-		t_result = 0;
-		vm.logger().Error(E_W, 16, L"RE_GREP", d, l);
-		SetError(16);
-	}*/
 	catch(const std::runtime_error &) {
 		match_count = 0;
 		vm.logger().Error(E_W, 16, L"RE_GREP", d, l);
@@ -4392,39 +4372,41 @@ CValue	CSystemFunction::RE_REPLACEEX(const CValue &arg, yaya::string_t &d, int &
 	yaya::string_t arg2 = arg2_orig;
 
 	//最後から1文字手前まで
-	for ( yaya::string_t::iterator it = arg2.begin() ; it < (arg2.end()-1) ; ++it ) {
-		if ( *it == L'\\' ) {
-			yaya::char_t c = *(it+1);
-			
-			if ( c == L'\\' ) {
-				arg2.replace(it,it+2,L"\\");
-			}
-			else if ( c == L'a' ) {
-				arg2.replace(it,it+2,L"\a");
-			}
-			else if ( c == L'e' ) {
-				arg2.replace(it,it+2,L"\x1B");
-			}
-			else if ( c == L'f' ) {
-				arg2.replace(it,it+2,L"\f");
-			}
-			else if ( c == L'n' ) {
-				arg2.replace(it,it+2,L"\n");
-			}
-			else if ( c == L'r' ) {
-				arg2.replace(it,it+2,L"\r");
-			}
-			else if ( c == L't' ) {
-				arg2.replace(it,it+2,L"\t");
-			}
-			else if ( c == L'v' ) {
-				arg2.replace(it,it+2,L"\v");
-			}
-			else if ( c >= L'0' && c <= L'9' ) {
-				yaya::char_t rep[3] = L"$0";
-				rep[1] = c;
-				arg2.replace(it,it+2,rep);
-				it += 1; //次の文字は読み飛ばして良い
+	if ( arg2.size() > 0 ) {
+		for ( yaya::string_t::iterator it = arg2.begin() ; it < (arg2.end()-1) ; ++it ) {
+			if ( *it == L'\\' ) {
+				yaya::char_t c = *(it+1);
+				
+				if ( c == L'\\' ) {
+					arg2.replace(it,it+2,L"\\");
+				}
+				else if ( c == L'a' ) {
+					arg2.replace(it,it+2,L"\a");
+				}
+				else if ( c == L'e' ) {
+					arg2.replace(it,it+2,L"\x1B");
+				}
+				else if ( c == L'f' ) {
+					arg2.replace(it,it+2,L"\f");
+				}
+				else if ( c == L'n' ) {
+					arg2.replace(it,it+2,L"\n");
+				}
+				else if ( c == L'r' ) {
+					arg2.replace(it,it+2,L"\r");
+				}
+				else if ( c == L't' ) {
+					arg2.replace(it,it+2,L"\t");
+				}
+				else if ( c == L'v' ) {
+					arg2.replace(it,it+2,L"\v");
+				}
+				else if ( c >= L'0' && c <= L'9' ) {
+					yaya::char_t rep[3] = L"$0";
+					rep[1] = c;
+					arg2.replace(it,it+2,rep);
+					it += 1; //次の文字は読み飛ばして良い
+				}
 			}
 		}
 	}
@@ -4436,7 +4418,14 @@ CValue	CSystemFunction::RE_REPLACEEX(const CValue &arg, yaya::string_t &d, int &
 		CRegexpT<yaya::char_t> regex(arg1.c_str(),re_option);
 
 		MatchResult t_result;
-		yaya::char_t *result = regex.Replace(arg0.c_str(),arg2.c_str(),0,count,&t_result);
+		yaya::char_t *result;
+
+		if ( arg2.size() > 0 ) {
+			result = regex.Replace(arg0.c_str(),arg2.c_str(),0,count,&t_result);
+		}
+		else {
+			result = regex.Replace(arg0.c_str(),L"",0,count,&t_result);
+		}
 
 		str_result = result;
 
@@ -4446,11 +4435,6 @@ CValue	CSystemFunction::RE_REPLACEEX(const CValue &arg, yaya::string_t &d, int &
 
 		regex.ReleaseString(result);
 	}
-	/*catch(const boost::bad_expression &) {
-		t_result = 0;
-		vm.logger().Error(E_W, 16, L"RE_GREP", d, l);
-		SetError(16);
-	}*/
 	catch(const std::runtime_error &) {
 		vm.logger().Error(E_W, 16, L"RE_GREP", d, l);
 		SetError(16);
@@ -4512,11 +4496,6 @@ CValue	CSystemFunction::RE_SPLIT_CORE(const CValue &arg, yaya::string_t &d, int 
 			splits.array().push_back(L"");
 		}
 	}
-	/*catch(const boost::bad_expression &) {
-		splits = CValue(F_TAG_ARRAY, 0);
-		vm.logger().Error(E_W, 16, fncname, d, l);
-		SetError(16);
-	}*/
 	catch(const std::runtime_error &) {
 		splits = CValue(F_TAG_ARRAY, 0/*dmy*/);
 		vm.logger().Error(E_W, 16, fncname, d, l);

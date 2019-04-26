@@ -18,13 +18,14 @@
 #endif
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "cell.h"
 #include "selecter.h"
 #include "globaldef.h"
 #include "variable.h"
 #include "value.h"
+#include "fix_old_compiler.h"
 
 class CAyaVM;
 class CCell;
@@ -40,8 +41,8 @@ public:
 	int	linecount;					// «‘ƒtƒ@ƒCƒ‹’†‚Ìs”Ô†
 
 private:
-	mutable boost::shared_ptr<std::vector<CCell> >   m_cell;			// ”®‚Ì€‚ÌŒQ@
-	mutable boost::shared_ptr<std::vector<CSerial> > m_serial;			// ”®‚Ì‰‰Z‡˜
+	mutable std_shared_ptr<std::vector<CCell> >   m_cell;			// ”®‚Ì€‚ÌŒQ@
+	mutable std_shared_ptr<std::vector<CSerial> > m_serial;			// ”®‚Ì‰‰Z‡˜
 
 public:
 	CStatement(int t, int l)
@@ -157,6 +158,7 @@ protected:
 	void	SolveEmbedCell(CCell &cell, CStatement &st, CLocalVariable &lvar);
 
 	char	Comma(CValue &answer, std::vector<int> &sid, CStatement &st, CLocalVariable &lvar);
+	char	CommaAdd(CValue &answer, std::vector<int> &sid, CStatement &st, CLocalVariable &lvar);
 	char	Subst(int type, CValue &answer, std::vector<int> &sid, CStatement &st, CLocalVariable &lvar);
 	char	SubstToArray(CCell &vcell, CCell &ocell, CValue &answer, CStatement &st, CLocalVariable &lvar);
 	char	Array(CCell &anscell, std::vector<int> &sid, CStatement &st, CLocalVariable &lvar);

@@ -21,6 +21,8 @@
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
+#define FALSE      0
+#define TRUE       1
 
 extern "C" {
 	typedef int (*POSIX_FUNC)(int);
@@ -504,7 +506,7 @@ template <class T> void CSortedBufferT <T> :: Add(const T & rT)
 {
 	if(m_bSortFreezed != 0)
 	{
-		Append(rT);
+		this->Append(rT);
 		return;
 	}
 
@@ -521,7 +523,7 @@ template <class T> void CSortedBufferT <T> :: Add(const T & rT)
 		c = (a + b + 1) / 2;
 	}
 
-	Insert(c, rT);
+	this->Insert(c, rT);
 }
 
 template <class T> void CSortedBufferT <T> :: Add(const T * pT, int nSize)
@@ -2789,8 +2791,8 @@ template <class CHART> ElxInterface * CBuilderT <CHART> :: BuildSimple(int & fla
 		return GetStockElx(STOCKELX_EMPTY);
 }
 
-#define max(a, b)  (((a) > (b)) ? (a) : (b))
-#define min(a, b)  (((a) < (b)) ? (a) : (b))
+//#define max(a, b)  a > b ? a : b
+//#define min(a, b)  a < b ? a : b
 
 template <class CHART> ElxInterface * CBuilderT <CHART> :: BuildCharset(int & flags)
 {
@@ -2913,8 +2915,10 @@ template <class CHART> ElxInterface * CBuilderT <CHART> :: BuildCharset(int & fl
 
 					if( ranges[i*2] <= RCHART('Z') && ranges[i*2+1] >= RCHART('A') )
 					{
-						newmin = tolower( max(RCHART('A'), ranges[i*2  ]) );
-						newmax = tolower( min(RCHART('Z'), ranges[i*2+1]) );
+						//newmin = tolower( max(RCHART('A'), ranges[i*2  ]) );
+						//newmax = tolower( min(RCHART('Z'), ranges[i*2+1]) );
+						newmin = tolower( RCHART('A') > ranges[i*2  ] ? RCHART('A') : ranges[i*2  ] );
+						newmax = tolower( RCHART('A') < ranges[i*2  ] ? RCHART('Z') : ranges[i*2+1] );
 
 						if( newmin < ranges[i*2] || newmax > ranges[i*2+1] )
 						{
@@ -2925,8 +2929,8 @@ template <class CHART> ElxInterface * CBuilderT <CHART> :: BuildCharset(int & fl
 
 					if( ranges[i*2] <= RCHART('z') && ranges[i*2+1] >= RCHART('a') )
 					{
-						newmin = toupper( max(RCHART('a'), ranges[i*2  ]) );
-						newmax = toupper( min(RCHART('z'), ranges[i*2+1]) );
+						newmin = toupper( RCHART('A') > ranges[i*2  ] ? RCHART('A') : ranges[i*2  ] );
+						newmax = toupper( RCHART('A') < ranges[i*2  ] ? RCHART('Z') : ranges[i*2+1] );
 
 						if( newmin < ranges[i*2] || newmax > ranges[i*2+1] )
 						{

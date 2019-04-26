@@ -27,11 +27,12 @@
 
 #include <vector>
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "cell.h"
 #include "globaldef.h"
 #include "value.h"
+#include "fix_old_compiler.h"
 
 class CAyaVM;
 
@@ -45,7 +46,7 @@ public:
 protected:
 	char	erased;					// 消去されたことを示すフラグ（グローバル変数で使用）
 									// 0/1=有効/消去された
-	mutable boost::shared_ptr<CValue> m_value;				// 値
+	mutable std_shared_ptr<CValue> m_value;				// 値
 
 public:
 	CVariable(const yaya::string_t &n)
@@ -82,7 +83,7 @@ public:
 	char	IsErased(void) { return erased; }
 
 	//////////////////////////////////////
-	boost::shared_ptr<CValue> &value_shared(void) const {
+	std_shared_ptr<CValue> &value_shared(void) const {
 		return m_value;
 	}
 	const CValue &value_const(void) const {
@@ -216,6 +217,8 @@ public:
 	void	SetValue(int index, const CValueArray &value) { var[index].Enable(); var[index].value() = value; }
 	void	SetValue(int index, const CValueSub &value) { var[index].Enable(); var[index].value() = value; }
 	void	SetDelimiter(int index, const yaya::string_t value) { var[index].Enable(); var[index].delimiter = value; }
+
+	void	EnableValue(int index) { var[index].Enable(); }
 
 	void	Erase(const yaya::string_t &name)
 	{

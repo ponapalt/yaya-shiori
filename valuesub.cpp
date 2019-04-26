@@ -254,6 +254,25 @@ CValueSub CValueSub::operator +(const CValueSub &value) const
 	return CValueSub(value);
 }
 
+void CValueSub::operator +=(const CValueSub &value)
+{
+	int t = CalcEscalationTypeStr(value.type);
+	if ( t != type ) {
+		*this = operator+(value);
+		return;
+	}
+
+	switch(t) {
+	case F_TAG_INT:
+		i_value += value.GetValueInt();
+	case F_TAG_DOUBLE:
+		d_value += value.GetValueDouble();
+	case F_TAG_STRING:
+		s_value += value.GetValueString();
+	}
+	SetType(t);
+}
+
 /* -----------------------------------------------------------------------
  *  operator - (CValueSub)
  * -----------------------------------------------------------------------
@@ -272,6 +291,11 @@ CValueSub CValueSub::operator -(const CValueSub &value) const
 	return CValueSub(value);
 }
 
+void CValueSub::operator -=(const CValueSub &value)
+{
+	*this = operator-(value);
+}
+
 /* -----------------------------------------------------------------------
  *  operator * (CValueSub)
  * -----------------------------------------------------------------------
@@ -288,6 +312,11 @@ CValueSub CValueSub::operator *(const CValueSub &value) const
 	}
 
 	return CValueSub(value);
+}
+
+void CValueSub::operator *=(const CValueSub &value)
+{
+	*this = operator*(value);
 }
 
 /* -----------------------------------------------------------------------
@@ -324,6 +353,11 @@ CValueSub CValueSub::operator /(const CValueSub &value) const
 	return CValueSub(value);
 }
 
+void CValueSub::operator /=(const CValueSub &value)
+{
+	*this = operator/(value);
+}
+
 /* -----------------------------------------------------------------------
  *  operator % (CValueSub)
  * -----------------------------------------------------------------------
@@ -347,6 +381,11 @@ CValueSub CValueSub::operator %(const CValueSub &value) const
 	}
 
 	return CValueSub(value);
+}
+
+void CValueSub::operator %=(const CValueSub &value)
+{
+	*this = operator%(value);
 }
 
 /* -----------------------------------------------------------------------
