@@ -1,0 +1,17 @@
+***************
+*** 91,97 ****
+  #endif
+  #endif
+  
+- #define	SYSFUNC_NUM					134 //システム関数の全数
+  #define	SYSFUNC_HIS					61 //EmBeD_HiStOrY の位置（0start）
+  
+  static const wchar_t sysfunc[SYSFUNC_NUM][32] = {
+--- 91,97 ----
+  #endif
+  #endif
+  
++ #define	SYSFUNC_NUM					135 //システム関数の全数
+  #define	SYSFUNC_HIS					61 //EmBeD_HiStOrY の位置（0start）
+  
+  static const wchar_t sysfunc[SYSFUNC_NUM][32] = {
