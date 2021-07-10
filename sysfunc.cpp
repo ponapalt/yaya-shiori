@@ -91,7 +91,7 @@ extern "C" {
 #endif
 #endif
 
-#define	SYSFUNC_NUM					145 //システム関数の全数
+#define	SYSFUNC_NUM					146 //システム関数の全数
 #define	SYSFUNC_HIS					61 //EmBeD_HiStOrY の位置（0start）
 
 static const wchar_t sysfunc[SYSFUNC_NUM][32] = {
@@ -299,6 +299,7 @@ static const wchar_t sysfunc[SYSFUNC_NUM][32] = {
 	L"GETERRORLOG",
 	// 特殊(9)
 	L"DICLOAD",
+	L"GETSYSTEMFUNCLIST",
 };
 
 //このグローバル変数はマルチインスタンスでも共通
@@ -547,7 +548,7 @@ CValue	CSystemFunction::Execute(int index, const CValue &arg, const std::vector<
 		return RE_MATCH(arg, d, l);
 	case 60:	// RE_GREP
 		return RE_GREP(arg, d, l);
-	case 61:	// %[n]（置換済の値の再利用）処理用関数 → これのみCFunctionで処理するのでここへは来ない
+	case SYSFUNC_HIS:	// %[n]（置換済の値の再利用）処理用関数 → これのみCFunctionで処理するのでここへは来ない
 		vm.logger().Error(E_E, 49, d, l);
 		return CValue(F_TAG_NOP, 0/*dmy*/);
 	case 62:	// SETLASTERROR
@@ -715,7 +716,9 @@ CValue	CSystemFunction::Execute(int index, const CValue &arg, const std::vector<
 	case 143:
 		return GETERRORLOG(arg, d, l);
 	case 144:
-		return DICLOAD(arg, d, l);	
+		return DICLOAD(arg, d, l);
+	case 145:
+		return GETSYSTEMFUNCLIST(arg, d, l);	
 	default:
 		vm.logger().Error(E_E, 49, d, l);
 		return CValue(F_TAG_NOP, 0/*dmy*/);
@@ -6001,6 +6004,43 @@ CValue	CSystemFunction::GETFUNCLIST(const CValue &arg, yaya::string_t &/*d*/, in
 	return result;
 }
 
+/* -----------------------------------------------------------------------
+ *  関数名  ：  CSystemFunction::GETSYSTEMFUNCLIST
+ *  引数　　：　_argv[0] = 絞りこみ文字列
+ * -----------------------------------------------------------------------
+ */
+CValue	CSystemFunction::GETSYSTEMFUNCLIST(const CValue &arg, yaya::string_t &/*d*/, int &/*l*/)
+{
+	yaya::string_t name;
+
+	//STRINGの場合のみ絞りこみ文字列として認識
+	if ( arg.array_size() ) {
+		if (arg.array()[0].IsString()) {
+			name = arg.array()[0].GetValueString();
+		}
+	}
+
+	CValue result(F_TAG_ARRAY, 0/*dmy*/);
+
+	//絞りこみ文字列がない場合
+	if ( name.empty() ) {
+		for ( int i = 0 ; i < sizeof(sysfunc) / sizeof(sysfunc[0]) ; ++i ) {
+			result.array().push_back(CValueSub(sysfunc[i]));
+		}
+	}
+	//ある場合
+	else {
+		yaya::string_t::size_type len = name.length();
+
+		for ( int i = 0 ; i < sizeof(sysfunc) / sizeof(sysfunc[0]) ; ++i ) {
+			if ( name.compare(0,len,sysfunc[i],0,len) == 0 && sysfunc[i][0] ) {
+				result.array().push_back(CValueSub(sysfunc[i]));
+			}
+		}
+	}
+
+	return result;
+}
 /* -----------------------------------------------------------------------
  *  関数名  ：  CSystemFunction::GETVARLIST
  *  引数　　：　_argv[0] = 絞りこみ文字列
