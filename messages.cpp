@@ -37,15 +37,15 @@ bool yayamsg::IsEmpty(void)
  */
 bool yayamsg::LoadMessageFromTxt(const yaya::string_t &file,char cset)
 {
-	FILE *fp = yaya::w_fopen(file.c_str(), L"r");
+	FILE *fp = yaya::w_fopen(file.c_str(), L"rb");
 
 	if (fp == NULL) {
 		return false;
 	}
 
 	MessageArray *ptr = NULL;
+
 	yaya::string_t line;
-	yaya::string_t type;
 
 	ClearMessageArrays();
 
@@ -56,7 +56,7 @@ bool yayamsg::LoadMessageFromTxt(const yaya::string_t &file,char cset)
 		}
 
 		if ( line.substr(0,3)==L"!!!" ) {
-			type = line.substr(3);
+			yaya::string_t&type = line.substr(3);
 
 			if ( type == L"msgf" ) {
 				ptr = &msgf;
@@ -70,7 +70,7 @@ bool yayamsg::LoadMessageFromTxt(const yaya::string_t &file,char cset)
 			else if ( type == L"msgn" ) {
 				ptr = &msgn;
 			}
-			else if ( type == L"msgj" || type == L"msg" ) {
+			else if ( type == L"msgj" ) {
 				ptr = &msgj;
 			}
 			else {
@@ -85,7 +85,9 @@ bool yayamsg::LoadMessageFromTxt(const yaya::string_t &file,char cset)
 		
 		if ( line.substr(0,1)==L"*" ) {
 			if ( ptr ) {
-				ptr->push_back(line.substr(1));
+				line=line.substr(1);
+				yaya::ws_replace(line,L"\\n", L"\r\n");
+				ptr->push_back(line);
 			}
 			continue;
 		}
@@ -128,11 +130,14 @@ const yaya::string_t yayamsg::GetTextFromTable(int mode,int id)
 	}
 
 	if ( id < 0 || ptr->size() <= static_cast<size_t>(id) ) { //catch overflow
-		yaya::char_t buf[64];
-		swprintf(buf,L"%s%04d : (please specify messagetxt)",emsg,id);
-	}
+		yaya::char_t buf[64] = L"";
+		yaya::snprintf(buf,63,L"%04d",id);
 
-	return (*ptr)[id];
+		return yaya::string_t(emsg) + buf + L" : (please specify messagetxt)\r\n";
+	}
+	else {
+		return (*ptr)[id];
+	}
 }
 
 namespace yayamsg {
