@@ -10,6 +10,8 @@ copy /B /Y .\readme.txt tmp\yaya\readme.txt
 copy /B /Y .\readme-original.txt tmp\yaya\readme-original.txt
 rem upx --best tmp\yaya\yaya.dll
 rem upx --best tmp\yaya\yaya.exe
+del /F /S /Q tmp\yaya\*.bak
+del /F /S /Q tmp\yaya\messagetxt\*.bak
 
 del /F /S /Q tmp\yaya.zip
 
