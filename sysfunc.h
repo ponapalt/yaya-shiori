@@ -245,6 +245,7 @@ protected:
 
 	CValue	DICLOAD(const CValue &arg, yaya::string_t &d, int &l);
 	CValue	GETFUNCINFO(const CValue &arg, yaya::string_t &d, int &l);
+	CValue	PREPROCESSGLOBALDEFINE(const CValue &arg, yaya::string_t &d, int &l);
 
 	CValue	IHASH(const CValue &arg, yaya::string_t &d, int &l);
 	CValue	HASH_KEYS(CValueArgArray &valuearg, yaya::string_t &d, int &l);
